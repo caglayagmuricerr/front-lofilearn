@@ -1,0 +1,91 @@
+@import url("https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide scrollbar for Webkit browsers (Chrome, Safari) */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for Firefox */
+html {
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar for IE and Edge */
+body {
+  -ms-overflow-style: none;
+}
+
+body {
+  @apply text-black;
+  @apply font-quicksand;
+}
+
+@keyframes gradient-text {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-text {
+  background: linear-gradient(90deg, #ea8228, #fefae0, #ea8228);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-text 3s ease infinite;
+}
+/* Apply styles only to input elements with type="range" and class="progressbar-style" */
+.progressbar-style[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: #ddd;
+  border-radius: 3px;
+  outline: none;
+  overflow: hidden;
+}
+
+.progressbar-style[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  background: #ddd;
+  border-radius: 3px;
+}
+
+.progressbar-style[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background-color: #fc9941;
+  border-radius: 0%;
+  margin-left: -10px;
+  transform: translateY(-100%);
+  cursor: pointer;
+}
+
+/* Progress Fill Effect */
+.progressbar-style[type="range"]::-moz-range-progress {
+  background: #fc9941;
+  height: 6px;
+}
+
+.progressbar-style[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    #fc9941 var(--progress, 0%),
+    #ddd var(--progress, 0%)
+  );
+}

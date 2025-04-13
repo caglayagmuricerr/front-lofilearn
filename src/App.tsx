@@ -1,0 +1,139 @@
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
+import { useEffect, useState } from "react";
+
+import Navbar from "./components/Navbar";
+import DashboardNavbar from "./components/DashboardNavbar";
+import MusicPlayer from "./components/MusicPlayer";
+
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import CreateQuiz from "./pages/CreateQuiz";
+import PlayQuiz from "./pages/PlayQuiz";
+import JoinQuiz from "./pages/JoinQuiz";
+import FourOFour from "./pages/FourOFour";
+import VerifyEmail from "./pages/VerifyEmail";
+import SuggestPage from "./pages/SuggestPage";
+
+import StudentProfile from "./pages/StudentProfile";
+import TeacherProfile from "./pages/TeacherProfile";
+
+import ProtectedRoute from "./components/ProtectedRoute";
+
+import StudentDashboard from "./pages/StudentDashboard";
+import TeacherDashboard from "./pages/TeacherDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
+  );
+}
+
+function AppContent() {
+  const location = useLocation();
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedRole = localStorage.getItem("role");
+    console.log("Stored role from localStorage:", storedRole); // debug log
+    setRole(storedRole);
+  }, [location]);
+
+  // routes that should show the regular Navbar
+  const regularNavbarRoutes = ["/", "/login", "/register"];
+  const shouldShowRegularNavbar = regularNavbarRoutes.includes(
+    location.pathname
+  );
+
+  // routes that should show the DashboardNavbar
+  const dashboardRoutes = [
+    "/student-dashboard",
+    "/teacher-dashboard",
+    "/admin-dashboard",
+    "/create",
+    "/play",
+    "/join",
+    "/student-profile",
+    "/teacher-profile",
+    "/manage-quizzes",
+  ];
+
+  const shouldShowDashboardNavbar = dashboardRoutes.some((route) =>
+    location.pathname.startsWith(route)
+  );
+
+  // exclude MusicPlayer on specific routes because these routes will have their own music
+  const excludeMPRoutes = ["/play/:quizId"];
+  const shouldShowMP = !excludeMPRoutes.some((route) =>
+    location.pathname.startsWith(route)
+  );
+
+  return (
+    <div className="min-h-screen bg-brown-500">
+      {shouldShowRegularNavbar && <Navbar />}
+      {shouldShowDashboardNavbar && role && <DashboardNavbar role={role} />}
+
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/create" element={<CreateQuiz />} />
+        <Route path="/play/:quizId" element={<PlayQuiz />} />
+        <Route path="/join" element={<JoinQuiz />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/suggest" element={<SuggestPage />} />
+        <Route
+          path="/student-dashboard"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student-profile"
+          element={
+            <ProtectedRoute requiredRole="student">
+              <StudentProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher-dashboard"
+          element={
+            <ProtectedRoute requiredRole="teacher">
+              <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher-profile"
+          element={
+            <ProtectedRoute requiredRole="teacher">
+              <TeacherProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-dashboard"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<FourOFour />} />
+      </Routes>
+      {shouldShowMP && <MusicPlayer />}
+    </div>
+  );
+}
+export default App;
