@@ -68,7 +68,6 @@ function AppContent() {
     "/create",
     "/play",
     "/join",
-    "/manage-quizzes",
   ];
 
   const shouldShowDashboardNavbar = dashboardRoutes.some((route) =>

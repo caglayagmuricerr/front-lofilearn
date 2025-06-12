@@ -121,9 +121,6 @@ function DashboardNavbar({ role }: { role: string | undefined }) {
             <Link to="/create" className="mr-4">
               Create Quiz
             </Link>
-            <Link to="/manage-quizzes" className="mr-4">
-              Manage Quizzes
-            </Link>
           </>
         );
       case "admin":
