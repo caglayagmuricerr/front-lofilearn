@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import { LogIn, AlertCircle, CheckCircle } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 
@@ -8,40 +8,78 @@ function Login() {
   const location = useLocation();
   const success = location.state?.successMessage;
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
+  const validateEmail = (email: string) => {
+    if (!email) return "Email is required";
+    if (!email.endsWith("@ogr.btu.edu.tr") && !email.endsWith("@btu.edu.tr")) {
+      return "You must use a Bursa Technical University email address (@ogr.btu.edu.tr or @btu.edu.tr)";
+    }
+    return "";
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+
+    if (error) {
+      setError("");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    try {
-      await axios.post("/api/auth/login", formData, {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true, // 🔥 this allows sending/receiving cookies
-      });
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
 
-      /*       const res = await axios.get("api/auth/me", {
+    if (!formData.password) {
+      setError("Password is required");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await axios.post("/api/auth/login", formData, {
+        headers: { "Content-Type": "application/json" },
         withCredentials: true,
       });
 
-      const userRole = res.data?.data?.role;
-
-      if (userRole === "student") navigate("/student-dashboard");
-      else if (userRole === "teacher") navigate("/teacher-dashboard");
-      else if (userRole === "admin") navigate("/admin-dashboard"); */
-      navigate("/");
+      if (response.data.success) {
+        if (formData.email.endsWith("@ogr.btu.edu.tr")) {
+          navigate("/student-dashboard");
+        } else if (formData.email.endsWith("@btu.edu.tr")) {
+          navigate("/teacher-dashboard");
+        } else {
+          navigate("/");
+        }
+      }
     } catch (err: any) {
       console.error("Login error:", err.response?.data || err.message);
 
       if (err.response?.data?.message) {
         setError(err.response.data.message);
+      } else if (err.response?.status === 401) {
+        setError("Invalid email or password. Please try again.");
+      } else if (err.response?.status === 403) {
+        setError("Please verify your email before logging in.");
+      } else if (err.response?.status === 400) {
+        setError("Please fill in all required fields.");
       } else {
         setError("An error occurred. Please try again later.");
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -52,18 +90,7 @@ function Login() {
           <div className="mb-4 p-4 rounded-md bg-green-50 border border-green-200">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                <CheckCircle className="h-5 w-5 text-green-400" />
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-green-800">{success}</p>
@@ -71,6 +98,7 @@ function Login() {
             </div>
           </div>
         )}
+
         <div className="text-center">
           <LogIn className="mx-auto h-12 w-12 text-chestnut-400" />
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
@@ -80,15 +108,23 @@ function Login() {
             Or{" "}
             <Link
               to="/register"
-              className="font-medium text-chestnut-400 hover:text-chestnut-300"
+              className="font-medium text-chestnut-400 hover:text-chestnut-300 transition-colors"
             >
               create a new account
             </Link>
           </p>
         </div>
+
         {error && (
-          <div className="mb-4 p-3 text-sm text-red-700 bg-red-100 rounded-md border border-red-200">
-            {error}
+          <div className="mb-4 p-4 rounded-md bg-red-50 border border-red-200">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-red-800">{error}</p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -99,20 +135,24 @@ function Login() {
                 htmlFor="email"
                 className="block text-sm font-medium text-gray-700"
               >
-                Email
+                University Email
               </label>
               <input
                 id="email"
                 name="email"
-                type="text"
+                type="email"
                 autoComplete="email"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-chestnut-300 focus:border-chestnut-300"
+                required
+                placeholder="mail@ogr.btu.edu.tr or mail@btu.edu.tr"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-chestnut-300 focus:border-chestnut-300 transition-colors"
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                onChange={(e) => handleInputChange("email", e.target.value)}
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Use your Bursa Technical University email address
+              </p>
             </div>
+
             <div>
               <label
                 htmlFor="password"
@@ -125,22 +165,38 @@ function Login() {
                 name="password"
                 type="password"
                 autoComplete="current-password"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-chestnut-300 focus:border-chestnut-300"
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-chestnut-300 focus:border-chestnut-300 transition-colors"
                 value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                onChange={(e) => handleInputChange("password", e.target.value)}
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-chestnut-400 hover:bg-chestnut-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-chestnut-300"
+            disabled={isLoading}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-chestnut-400 hover:bg-chestnut-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-chestnut-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Sign in
+            {isLoading ? (
+              <div className="flex items-center">
+                <div className="animate-spin -ml-1 mr-3 h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                Signing in...
+              </div>
+            ) : (
+              "Sign in"
+            )}
           </button>
         </form>
+
+        <div className="text-center">
+          <Link
+            to="/forgot-password"
+            className="text-sm text-chestnut-400 hover:text-chestnut-300 transition-colors"
+          >
+            Forgot your password?
+          </Link>
+        </div>
       </div>
     </div>
   );

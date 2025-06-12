@@ -19,6 +19,7 @@ import JoinQuiz from "./pages/JoinQuiz";
 import FourOFour from "./pages/FourOFour";
 import VerifyEmail from "./pages/VerifyEmail";
 import SuggestPage from "./pages/SuggestPage";
+import ChangePassword from "./pages/ChangePassword";
 
 import StudentProfile from "./pages/StudentProfile";
 import TeacherProfile from "./pages/TeacherProfile";
@@ -90,6 +91,8 @@ function AppContent() {
         <Route path="/join" element={<JoinQuiz />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/suggest" element={<SuggestPage />} />
+        <Route path="/change-password" element={<ChangePassword />} />
+
         <Route
           path="/student-dashboard"
           element={

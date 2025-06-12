@@ -1,9 +1,6 @@
-// *******************************************
-//  NEEDS TO BE CHANGED NO MORE LOCAL STORAGE
-// *******************************************
-
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 
 interface ProtectedRouteProps {
   children: JSX.Element;
@@ -15,30 +12,29 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const checkAuthorization = () => {
+      try {
+        const token = document.cookie;
+        console.log("Token found:", token);
+        if (!token) {
+          throw new Error("No token found");
+        }
 
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+        const decodedToken: { role: string } = jwtDecode(
+          decodeURIComponent(token.replace("Bearer%20", ""))
+        );
 
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      const userRole = payload.role;
-
-      if (userRole === requiredRole) {
-        setIsAuthorized(true);
-      } else {
-        localStorage.removeItem("token");
-        localStorage.removeItem("role");
+        if (decodedToken.role === requiredRole) {
+          setIsAuthorized(true);
+        }
+      } catch (error) {
+        console.error("Error decoding token:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Invalid token:", error);
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-    }
+    };
 
-    setLoading(false);
+    checkAuthorization();
   }, [requiredRole]);
 
   if (loading) return <p>Loading...</p>;
