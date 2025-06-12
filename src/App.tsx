@@ -5,6 +5,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 
 import Navbar from "./components/Navbar";
 import DashboardNavbar from "./components/DashboardNavbar";
@@ -40,9 +41,16 @@ function AppContent() {
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("role");
-    console.log("Stored role from localStorage:", storedRole); // debug log
-    setRole(storedRole);
+    try {
+      const cookieString = document.cookie;
+      const decodedToken: { role: string } = jwtDecode(
+        decodeURIComponent(cookieString.replace("Bearer%20", ""))
+      );
+      setRole(decodedToken.role);
+    } catch (error) {
+      console.error("Error decoding token:", error);
+      setRole(null);
+    }
   }, [location]);
 
   // routes that should show the regular Navbar
