@@ -1,6 +1,25 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function DashboardNavbar({ role }: { role: string | undefined }) {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        navigate("/login");
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
   const getNavLinks = () => {
     switch (role) {
       case "student":
@@ -50,7 +69,10 @@ function DashboardNavbar({ role }: { role: string | undefined }) {
   return (
     <nav className="bg-chestnut-500 p-4 text-white flex justify-between">
       <div className="text-lg font-bold">Dashboard</div>
-      <div>{getNavLinks()}</div>
+      <div className="flex items-center">
+        {getNavLinks()}
+        <button onClick={handleLogout}>Logout</button>
+      </div>
     </nav>
   );
 }
