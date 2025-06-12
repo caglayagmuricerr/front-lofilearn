@@ -1,16 +1,14 @@
 import React, { useState } from "react";
-import { Plus, Image, Trash2, Copy } from "lucide-react";
+import { Plus, Image, Trash2, X, Upload } from "lucide-react";
 import { generate8DigitCode } from "../utils/Generate8DigitCode";
 
 interface QuestionForm {
+  type: string;
   text: string;
-  options: string[];
-  correctAnswer: number;
-  timeLimit: number;
-  media?: {
-    type: "image" | "video";
-    url: string;
-  };
+  options: { text: string; isCorrect: boolean }[];
+  correctAnswer: string;
+  explanation?: string;
+  image?: string;
 }
 
 function CreateQuiz() {
@@ -24,40 +22,191 @@ function CreateQuiz() {
   });
 
   const [currentQuestion, setCurrentQuestion] = useState<QuestionForm>({
+    type: "multiple_choice",
     text: "",
-    options: ["", "", "", ""],
-    correctAnswer: 0,
-    timeLimit: 20,
+    options: [
+      { text: "", isCorrect: false },
+      { text: "", isCorrect: false },
+      { text: "", isCorrect: false },
+      { text: "", isCorrect: false },
+    ],
+    correctAnswer: "",
+    explanation: "",
+    image: "",
   });
 
+  const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const cookie = document.cookie;
+      const token = cookie.split("%20")[1].trim();
+
+      const response = await fetch("/api/quizzes/upload-image", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      console.log("Token:", token);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to upload image");
+      }
+
+      setCurrentQuestion({
+        ...currentQuestion,
+        image: data.imageUrl,
+      });
+    } catch (err: any) {
+      setError(err.message || "Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeImage = () => {
+    setCurrentQuestion({
+      ...currentQuestion,
+      image: "",
+    });
+  };
+
   const handleAddQuestion = () => {
+    if (!currentQuestion.text.trim()) {
+      setError("Question text is required");
+      return;
+    }
+
+    const hasValidOptions = currentQuestion.options.some(
+      (option) => option.text.trim() && option.isCorrect
+    );
+
+    if (!hasValidOptions) {
+      setError("At least one option must be filled and marked as correct");
+      return;
+    }
+
     setQuizData({
       ...quizData,
       questions: [...quizData.questions, currentQuestion],
     });
+
     setCurrentQuestion({
+      type: "multiple_choice",
       text: "",
-      options: ["", "", "", ""],
-      correctAnswer: 0,
-      timeLimit: 20,
+      options: [
+        { text: "", isCorrect: false },
+        { text: "", isCorrect: false },
+        { text: "", isCorrect: false },
+        { text: "", isCorrect: false },
+      ],
+      correctAnswer: "",
+      explanation: "",
+      image: "",
+    });
+
+    setError("");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    if (!quizData.title.trim()) {
+      setError("Quiz title is required");
+      setLoading(false);
+      return;
+    }
+
+    if (quizData.questions.length === 0) {
+      setError("At least one question is required");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const cookie = document.cookie;
+      const token = cookie.split("%20")[1].trim();
+
+      if (!token) {
+        setError("You must be logged in to create a quiz");
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch("/api/quizzes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: quizData.title,
+          description: quizData.description,
+          questions: quizData.questions,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create quiz");
+      }
+
+      setSuccess(
+        `Quiz created successfully! Invite code: ${data.quiz.inviteCode}`
+      );
+
+      setQuizData({
+        code: generate8DigitCode(),
+        title: "",
+        description: "",
+        questions: [],
+      });
+    } catch (err: any) {
+      setError(err.message || "Failed to create quiz");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOptionChange = (index: number, text: string) => {
+    const newOptions = [...currentQuestion.options];
+    newOptions[index] = { ...newOptions[index], text };
+    setCurrentQuestion({
+      ...currentQuestion,
+      options: newOptions,
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCorrectAnswerChange = (index: number) => {
+    const newOptions = currentQuestion.options.map((option, i) => ({
+      ...option,
+      isCorrect: i === index,
+    }));
 
-    console.log("Quiz data:", quizData);
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard
-      .writeText(quizData.code)
-      .then(() => {
-        console.log("code copied to clipboard!");
-      })
-      .catch((err) => {
-        console.error("Failed to copy code: ", err);
-      });
+    setCurrentQuestion({
+      ...currentQuestion,
+      options: newOptions,
+      correctAnswer: currentQuestion.options[index].text,
+    });
   };
 
   return (
@@ -66,6 +215,18 @@ function CreateQuiz() {
         Create a New Quiz
       </h1>
 
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          {success}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white p-6 rounded-lg shadow-md space-y-6">
           <div>
@@ -73,7 +234,7 @@ function CreateQuiz() {
               htmlFor="title"
               className="block text-sm font-medium text-gray-700"
             >
-              Quiz Title
+              Quiz Title *
             </label>
             <input
               type="text"
@@ -114,7 +275,7 @@ function CreateQuiz() {
               htmlFor="questionText"
               className="block text-sm font-medium text-gray-700"
             >
-              Question Text
+              Question Text *
             </label>
             <input
               type="text"
@@ -124,82 +285,106 @@ function CreateQuiz() {
                 setCurrentQuestion({ ...currentQuestion, text: e.target.value })
               }
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+              required
             />
           </div>
 
+          {/* Image Upload Section */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Options
+              Question Image (Optional)
+            </label>
+            {currentQuestion.image ? (
+              <div className="relative inline-block">
+                <img
+                  src={currentQuestion.image}
+                  alt="Question"
+                  className="max-w-xs max-h-48 object-contain rounded-lg border"
+                />
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    {uploadingImage ? (
+                      <Upload className="w-8 h-8 mb-4 text-gray-500 animate-pulse" />
+                    ) : (
+                      <Image className="w-8 h-8 mb-4 text-gray-500" />
+                    )}
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">
+                        {uploadingImage ? "Uploading..." : "Click to upload"}
+                      </span>{" "}
+                      an image
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      PNG, JPG or GIF (Max 5MB)
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Rest of the form remains the same */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Options *
             </label>
             {currentQuestion.options.map((option, index) => (
               <div key={index} className="flex items-center mb-2">
                 <input
                   type="text"
-                  value={option}
-                  onChange={(e) => {
-                    const newOptions = [...currentQuestion.options];
-                    newOptions[index] = e.target.value;
-                    setCurrentQuestion({
-                      ...currentQuestion,
-                      options: newOptions,
-                    });
-                  }}
+                  value={option.text}
+                  onChange={(e) => handleOptionChange(index, e.target.value)}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
                   placeholder={`Option ${index + 1}`}
                 />
                 <input
                   type="radio"
                   name="correctAnswer"
-                  checked={currentQuestion.correctAnswer === index}
-                  onChange={() =>
-                    setCurrentQuestion({
-                      ...currentQuestion,
-                      correctAnswer: index,
-                    })
-                  }
+                  checked={option.isCorrect}
+                  onChange={() => handleCorrectAnswerChange(index)}
                   className="ml-2 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
                 />
+                <label className="ml-1 text-sm text-gray-600">Correct</label>
               </div>
             ))}
           </div>
 
           <div>
             <label
-              htmlFor="timeLimit"
+              htmlFor="explanation"
               className="block text-sm font-medium text-gray-700"
             >
-              Time Limit (seconds)
+              Explanation (Optional)
             </label>
-            <input
-              type="number"
-              id="timeLimit"
-              value={currentQuestion.timeLimit}
+            <textarea
+              id="explanation"
+              value={currentQuestion.explanation || ""}
               onChange={(e) =>
                 setCurrentQuestion({
                   ...currentQuestion,
-                  timeLimit: parseInt(e.target.value),
+                  explanation: e.target.value,
                 })
               }
-              min="5"
-              max="60"
+              rows={2}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
             />
-          </div>
-
-          <div>
-            <button
-              type="button"
-              onClick={() =>
-                setCurrentQuestion({
-                  ...currentQuestion,
-                  media: { type: "image", url: "" },
-                })
-              }
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <Image className="h-5 w-5 mr-2" />
-              Add Media
-            </button>
           </div>
 
           <button
@@ -221,9 +406,26 @@ function CreateQuiz() {
               {quizData.questions.map((question, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex items-start justify-between p-4 border rounded-lg"
                 >
-                  <span className="font-medium">{question.text}</span>
+                  <div className="flex-1">
+                    <div className="flex items-start space-x-3">
+                      {question.image && (
+                        <img
+                          src={question.image}
+                          alt="Question"
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      )}
+                      <div>
+                        <span className="font-medium">{question.text}</span>
+                        <div className="text-sm text-gray-600 mt-1">
+                          Correct:{" "}
+                          {question.options.find((opt) => opt.isCorrect)?.text}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
@@ -232,7 +434,7 @@ function CreateQuiz() {
                       );
                       setQuizData({ ...quizData, questions: newQuestions });
                     }}
-                    className="text-red-600 hover:text-red-800"
+                    className="text-red-600 hover:text-red-800 ml-4"
                   >
                     <Trash2 className="h-5 w-5" />
                   </button>
@@ -244,15 +446,12 @@ function CreateQuiz() {
 
         <button
           type="submit"
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+          disabled={loading}
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
         >
-          Create Quiz
+          {loading ? "Creating Quiz..." : "Create Quiz"}
         </button>
       </form>
-      <p>Copy Quiz Code : {quizData.code} </p>
-      <button type="button" onClick={handleCopy}>
-        <Copy className="h-5 w-5 mr-2" />
-      </button>
     </div>
   );
 }

@@ -19,7 +19,7 @@ interface UserInfo {
   email: string;
   role: string;
   profilePicture?: string;
-  quizzes: Quiz[];
+  quizzesToTake: Quiz[];
   lastLogin: string;
   isVerified: boolean;
 }
@@ -34,6 +34,7 @@ function StudentDashboard() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const [quizDetails, setQuizDetails] = useState<Quiz[]>([]);
 
   const fetchUserInfo = async () => {
     try {
@@ -67,6 +68,24 @@ function StudentDashboard() {
     fetchUserInfo();
   }, []);
 
+  useEffect(() => {
+    const fetchQuizDetails = async () => {
+      if (userInfo?.quizzesToTake?.length) {
+        const ids = userInfo.quizzesToTake.map((q: any) =>
+          typeof q === "string" ? q : q._id
+        );
+        const response = await fetch("/api/quizzes/byIds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids }),
+        });
+        const result = await response.json();
+        if (result.success) setQuizDetails(result.data);
+      }
+    };
+    fetchQuizDetails();
+  }, [userInfo]);
+
   const getCurrentUserQuizStatus = (quiz: Quiz) => {
     const currentUserId = userInfo?._id;
 
@@ -78,13 +97,8 @@ function StudentDashboard() {
   };
 
   const completedQuizzes =
-    userInfo?.quizzes?.filter(
+    userInfo?.quizzesToTake?.filter(
       (quiz) => getCurrentUserQuizStatus(quiz) === "completed"
-    ) || [];
-
-  const quizInvites =
-    userInfo?.quizzes?.filter(
-      (quiz) => getCurrentUserQuizStatus(quiz) === "invited"
     ) || [];
 
   if (loading) {
@@ -150,13 +164,10 @@ function StudentDashboard() {
         Quiz Invitations
       </h2>
       <ul>
-        {quizInvites.length > 0 ? (
-          quizInvites.map((invite) => (
-            <li key={invite._id} className="p-2 border-b">
-              {invite.title}{" "}
-              <button className="ml-2 text-chestnut-500 hover:text-chestnut-700">
-                Accept
-              </button>
+        {quizDetails.length > 0 ? (
+          quizDetails.map((quiz) => (
+            <li key={quiz._id} className="p-2 border-b">
+              {quiz.title}
             </li>
           ))
         ) : (
