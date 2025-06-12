@@ -15,14 +15,14 @@ function JoinQuiz() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 pb-24">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
         <div className="text-center">
-          <Users className="mx-auto h-12 w-12 text-purple-600" />
+          <Users className="mx-auto h-12 w-12 text-chestnut-400" />
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Join a Quiz
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-400">
             Enter the game code and your name to join
           </p>
         </div>
@@ -41,7 +41,7 @@ function JoinQuiz() {
                 name="gameCode"
                 type="text"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-chestnut-500 focus:border-chestnut-500"
                 value={gameCode}
                 onChange={(e) => setGameCode(e.target.value)}
                 placeholder="Enter 6-digit code"
@@ -60,7 +60,7 @@ function JoinQuiz() {
                 name="username"
                 type="text"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-chestnut-500 focus:border-chestnut-500"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your name"
@@ -70,7 +70,7 @@ function JoinQuiz() {
 
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-chestnut-400 hover:bg-chestnut-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-chestnut-500"
           >
             Join Game
           </button>

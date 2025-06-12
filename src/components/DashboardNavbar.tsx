@@ -48,7 +48,7 @@ function DashboardNavbar({ role }: { role: string | undefined }) {
   };
 
   return (
-    <nav className="bg-gray-800 p-4 text-white flex justify-between">
+    <nav className="bg-chestnut-500 p-4 text-white flex justify-between">
       <div className="text-lg font-bold">Dashboard</div>
       <div>{getNavLinks()}</div>
     </nav>
