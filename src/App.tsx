@@ -21,6 +21,7 @@ import FourOFour from "./pages/FourOFour";
 import VerifyEmail from "./pages/VerifyEmail";
 import SuggestPage from "./pages/SuggestPage";
 import ChangePassword from "./pages/ChangePassword";
+import ForgotPassword from "./pages/ForgotPassword";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -95,6 +96,7 @@ function AppContent() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/suggest" element={<SuggestPage />} />
         <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route
           path="/student-dashboard"
