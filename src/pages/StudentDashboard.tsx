@@ -8,7 +8,7 @@ interface Participant {
 }
 
 interface Quiz {
-  id: number;
+  _id: number;
   title: string;
   score?: string;
   participants?: Participant[];
@@ -389,7 +389,7 @@ function StudentDashboard() {
       <ul>
         {quizInvites.length > 0 ? (
           quizInvites.map((invite) => (
-            <li key={invite.id} className="p-2 border-b">
+            <li key={invite._id} className="p-2 border-b">
               {invite.title}{" "}
               <button className="ml-2 text-chestnut-500 hover:text-chestnut-700">
                 Accept
@@ -407,7 +407,7 @@ function StudentDashboard() {
       <ul>
         {completedQuizzes.length > 0 ? (
           completedQuizzes.map((quiz) => (
-            <li key={quiz.id} className="p-2 border-b">
+            <li key={quiz._id} className="p-2 border-b">
               {quiz.title} - Score: {quiz.score}
             </li>
           ))
