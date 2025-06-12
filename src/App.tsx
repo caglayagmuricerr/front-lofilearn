@@ -21,9 +21,6 @@ import VerifyEmail from "./pages/VerifyEmail";
 import SuggestPage from "./pages/SuggestPage";
 import ChangePassword from "./pages/ChangePassword";
 
-import StudentProfile from "./pages/StudentProfile";
-import TeacherProfile from "./pages/TeacherProfile";
-
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import StudentDashboard from "./pages/StudentDashboard";
@@ -62,8 +59,6 @@ function AppContent() {
     "/create",
     "/play",
     "/join",
-    "/student-profile",
-    "/teacher-profile",
     "/manage-quizzes",
   ];
 
@@ -102,26 +97,10 @@ function AppContent() {
           }
         />
         <Route
-          path="/student-profile"
-          element={
-            <ProtectedRoute requiredRole="student">
-              <StudentProfile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/teacher-dashboard"
           element={
             <ProtectedRoute requiredRole="teacher">
               <TeacherDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/teacher-profile"
-          element={
-            <ProtectedRoute requiredRole="teacher">
-              <TeacherProfile />
             </ProtectedRoute>
           }
         />

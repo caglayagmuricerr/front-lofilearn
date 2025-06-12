@@ -12,7 +12,6 @@ function DashboardNavbar({ role }: { role: string | undefined }) {
             <Link to="/join" className="mr-4">
               Join Quiz
             </Link>
-            <Link to="/student-profile">Profile</Link>
           </>
         );
       case "teacher":
@@ -27,7 +26,6 @@ function DashboardNavbar({ role }: { role: string | undefined }) {
             <Link to="/manage-quizzes" className="mr-4">
               Manage Quizzes
             </Link>
-            <Link to="/teacher-profile">Profile</Link>
           </>
         );
       case "admin":
