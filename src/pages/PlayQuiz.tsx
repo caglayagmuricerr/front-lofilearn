@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
+import { jwtDecode } from "jwt-decode";
 
 interface Player {
   name: string;
@@ -35,6 +36,7 @@ const PlayQuiz = () => {
   const navigate = useNavigate();
 
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [userRole, setUserRole] = useState<string>("");
   const [quizState, setQuizState] = useState<QuizState>({
     players: [],
     questionIndex: 0,
@@ -53,6 +55,9 @@ const PlayQuiz = () => {
   useEffect(() => {
     const cookie = document.cookie;
     const token = cookie.split("%20")[1].trim();
+
+    const decodedToken = jwtDecode<{ role: string }>(token);
+    setUserRole(decodedToken.role);
 
     if (!token) {
       navigate("/login");
@@ -139,7 +144,7 @@ const PlayQuiz = () => {
   }, [inviteCode, navigate]);
 
   const handleAnswerSelect = (answerIndex: number) => {
-    if (quizState.hasAnswered || !socket) return;
+    if (quizState.hasAnswered || !socket || userRole !== "student") return;
 
     setQuizState((prev) => ({
       ...prev,
@@ -155,7 +160,7 @@ const PlayQuiz = () => {
   };
 
   const startQuiz = () => {
-    if (socket) {
+    if (socket && userRole === "teacher") {
       socket.emit("start-quiz", { inviteCode });
     }
   };
@@ -235,7 +240,7 @@ const PlayQuiz = () => {
                   <span className="font-medium">
                     {player.name} ({player.role})
                   </span>
-                  {quizState.isQuizStarted && (
+                  {quizState.isQuizStarted && player.role === "student" && (
                     <span className="text-sm text-gray-600">
                       Score: {quizState.scores[player.name] || 0}
                     </span>
@@ -244,14 +249,16 @@ const PlayQuiz = () => {
               ))}
             </div>
 
-            {!quizState.isQuizStarted && quizState.players.length > 0 && (
-              <button
-                onClick={startQuiz}
-                className="w-full mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-              >
-                Start Quiz
-              </button>
-            )}
+            {!quizState.isQuizStarted &&
+              quizState.players.length > 0 &&
+              userRole === "teacher" && (
+                <button
+                  onClick={startQuiz}
+                  className="w-full mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                >
+                  Start Quiz
+                </button>
+              )}
           </div>
 
           {/* Quiz Content */}
@@ -265,6 +272,11 @@ const PlayQuiz = () => {
                   Share the invite code <strong>{inviteCode}</strong> with other
                   players to join!
                 </p>
+                {userRole === "teacher" && (
+                  <p className="text-blue-600 mt-2">
+                    As a teacher, you can start the quiz when ready.
+                  </p>
+                )}
               </div>
             ) : quizState.isQuizEnded ? (
               <div className="bg-white rounded-lg shadow-md p-8">
@@ -334,30 +346,39 @@ const PlayQuiz = () => {
                       {quizState.currentQuestion.question}
                     </h2>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {quizState.currentQuestion.options.map(
-                        (option, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleAnswerSelect(index)}
-                            disabled={quizState.hasAnswered}
-                            className={`p-4 text-left rounded-lg border-2 transition-all ${
-                              quizState.selectedAnswer === index
-                                ? "border-blue-500 bg-blue-50"
-                                : quizState.hasAnswered
-                                ? "border-gray-200 bg-gray-50 cursor-not-allowed"
-                                : "border-gray-200 hover:border-blue-300 hover:bg-blue-50"
-                            }`}
-                          >
-                            <span className="font-medium text-gray-700">
-                              {String.fromCharCode(65 + index)}. {option}
-                            </span>
-                          </button>
-                        )
-                      )}
-                    </div>
+                    {userRole === "teacher" ? (
+                      <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                        <p className="text-blue-800 font-medium">
+                          You are observing as a teacher. Students are answering
+                          the question.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {quizState.currentQuestion.options.map(
+                          (option, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleAnswerSelect(index)}
+                              disabled={quizState.hasAnswered}
+                              className={`p-4 text-left rounded-lg border-2 transition-all ${
+                                quizState.selectedAnswer === index
+                                  ? "border-blue-500 bg-blue-50"
+                                  : quizState.hasAnswered
+                                  ? "border-gray-200 bg-gray-50 cursor-not-allowed"
+                                  : "border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                              }`}
+                            >
+                              <span className="font-medium text-gray-700">
+                                {String.fromCharCode(65 + index)}. {option}
+                              </span>
+                            </button>
+                          )
+                        )}
+                      </div>
+                    )}
 
-                    {quizState.hasAnswered && (
+                    {quizState.hasAnswered && userRole === "student" && (
                       <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded text-green-800">
                         Answer submitted! Waiting for other players...
                       </div>
