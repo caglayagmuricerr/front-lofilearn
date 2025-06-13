@@ -9,6 +9,7 @@ interface QuestionForm {
   correctAnswer: string;
   explanation?: string;
   image?: string;
+  timeLimit: number;
 }
 
 function CreateQuiz() {
@@ -33,6 +34,7 @@ function CreateQuiz() {
     correctAnswer: "",
     explanation: "",
     image: "",
+    timeLimit: 30,
   });
 
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ function CreateQuiz() {
       formData.append("image", file);
 
       const cookie = document.cookie;
-      const token = cookie.split("%20")[1].trim();
+      const token = cookie.split("%20")[1];
 
       const response = await fetch("/api/quizzes/upload-image", {
         method: "POST",
@@ -88,23 +90,34 @@ function CreateQuiz() {
   };
 
   const handleAddQuestion = () => {
-    if (!currentQuestion.text.trim()) {
+    if (!currentQuestion.text) {
       setError("Question text is required");
       return;
     }
 
     const hasValidOptions = currentQuestion.options.some(
-      (option) => option.text.trim() && option.isCorrect
+      (option) => option.text && option.isCorrect
     );
 
     if (!hasValidOptions) {
       setError("At least one option must be filled and marked as correct");
       return;
     }
+    const timeLimit = currentQuestion.timeLimit;
+
+    if (timeLimit < 10 || timeLimit > 60) {
+      setError("Time limit must be between 10 and 60 seconds");
+      return;
+    }
+
+    const questionToAdd = {
+      ...currentQuestion,
+      timeLimit: currentQuestion.timeLimit,
+    };
 
     setQuizData({
       ...quizData,
-      questions: [...quizData.questions, currentQuestion],
+      questions: [...quizData.questions, questionToAdd],
     });
 
     setCurrentQuestion({
@@ -119,8 +132,8 @@ function CreateQuiz() {
       correctAnswer: "",
       explanation: "",
       image: "",
+      timeLimit: 30,
     });
-
     setError("");
     setIsModalOpen(false);
   };
@@ -131,7 +144,7 @@ function CreateQuiz() {
     setError("");
     setSuccess("");
 
-    if (!quizData.title.trim()) {
+    if (!quizData.title) {
       setError("Quiz title is required");
       setLoading(false);
       return;
@@ -145,7 +158,7 @@ function CreateQuiz() {
 
     try {
       const cookie = document.cookie;
-      const token = cookie.split("%20")[1].trim();
+      const token = cookie.split("%20")[1];
 
       if (!token) {
         setError("You must be logged in to create a quiz");
@@ -311,6 +324,9 @@ function CreateQuiz() {
                           Correct:{" "}
                           {question.options.find((opt) => opt.isCorrect)?.text}
                         </div>
+                        <div className="text-sm text-gray-500 mt-1">
+                          Time limit: {question.timeLimit} seconds
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -432,6 +448,35 @@ function CreateQuiz() {
                     </label>
                   </div>
                 )}
+              </div>
+              <div>
+                <label
+                  htmlFor="timeLimit"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Time Limit (seconds) *
+                </label>
+                <input
+                  type="number"
+                  id="timeLimit"
+                  value={currentQuestion.timeLimit}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      timeLimit: isNaN(value)
+                        ? 10
+                        : Math.max(10, Math.min(60, value)),
+                    });
+                  }}
+                  min="10"
+                  max="60"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-chestnut-400 focus:ring-chestnut-400"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Time limit must be between 10 and 60 seconds
+                </p>
               </div>
 
               <div>

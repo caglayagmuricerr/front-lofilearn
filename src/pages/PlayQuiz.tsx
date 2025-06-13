@@ -58,16 +58,16 @@ const PlayQuiz = () => {
       navigate("/login");
       return;
     }
-    console.log("Invite code from params:", inviteCode);
+    //console.log("Invite code from params:", inviteCode);
     const newSocket = io("http://localhost:5000", {
       auth: { token },
     });
 
     newSocket.on("connect", () => {
-      console.log("Socket connected successfully");
+      //console.log("Socket connected successfully");
       setConnectionStatus("connected");
       if (inviteCode) {
-        console.log("Emitting join-lobby with code:", inviteCode);
+        //console.log("Emitting join-lobby with code:", inviteCode);
         newSocket.emit("join-lobby", { inviteCode });
       } else {
         console.error("No invite code available");
@@ -75,7 +75,7 @@ const PlayQuiz = () => {
     });
 
     newSocket.on("lobby-update", ({ players, message }) => {
-      console.log("Received lobby-update:", { players, message });
+      //console.log("Received lobby-update:", { players, message });
       setQuizState((prev) => ({
         ...prev,
         players: players || [],
