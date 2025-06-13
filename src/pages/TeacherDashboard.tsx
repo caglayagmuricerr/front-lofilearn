@@ -236,29 +236,38 @@ function TeacherDashboard() {
                     className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
                     onClick={async () => {
                       try {
+                        // Update the endpoint to match your route with quizId parameter
                         const response = await fetch(
-                          "/api/quizzes/invite-all",
+                          `/api/quizzes/invite-all/${quiz._id}`, // Fixed: Use quiz._id in URL path
                           {
                             method: "POST",
                             headers: {
                               "Content-Type": "application/json",
                             },
-                            body: JSON.stringify({ quizId: quiz._id }),
+                            // Removed body since quizId is now in URL parameter
                             credentials: "include",
                           }
                         );
                         const data = await response.json();
-                        if (data.success) {
-                          alert("All students invited!");
+                        if (response.ok) {
+                          // Changed from data.success to response.ok
+                          alert(
+                            `Success! Invited ${data.invitedCount} students to the quiz`
+                          );
+                          // Refresh quizzes to show updated participant count
+                          if (userInfo?._id) {
+                            fetchQuizzes(userInfo._id);
+                          }
                         } else {
                           alert(data.message || "Failed to invite students.");
                         }
                       } catch (err) {
+                        console.error("Error inviting students:", err);
                         alert("Error inviting students.");
                       }
                     }}
                   >
-                    Invite Participants
+                    Invite All Students
                   </button>
                 </div>
               </div>
