@@ -74,8 +74,9 @@ function AppContent() {
     location.pathname.startsWith(route)
   );
 
-  // exclude MusicPlayer on specific routes because these routes will have their own music
-  const excludeMPRoutes = ["/play/:quizId"];
+  // exclude MusicPlayer on these routes because they will have their own music
+  // NOTE: i dont have time for this rn
+  const excludeMPRoutes = ["/play"];
   const shouldShowMP = !excludeMPRoutes.some((route) =>
     location.pathname.startsWith(route)
   );
@@ -90,7 +91,7 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/create" element={<CreateQuiz />} />
-        <Route path="/play/:quizId" element={<PlayQuiz />} />
+        <Route path="/play/:inviteCode" element={<PlayQuiz />} />
         <Route path="/join" element={<JoinQuiz />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/suggest" element={<SuggestPage />} />

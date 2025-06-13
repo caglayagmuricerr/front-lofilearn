@@ -4,6 +4,7 @@ import { io, Socket } from "socket.io-client";
 
 interface Player {
   name: string;
+  role: string;
   score?: number;
 }
 
@@ -16,7 +17,7 @@ interface Question {
 }
 
 interface QuizState {
-  players: string[];
+  players: Player[];
   currentQuestion?: Question;
   questionIndex: number;
   totalQuestions: number;
@@ -26,6 +27,7 @@ interface QuizState {
   isQuizEnded: boolean;
   selectedAnswer?: number;
   hasAnswered: boolean;
+  userRole?: string;
 }
 
 const PlayQuiz = () => {
@@ -56,31 +58,32 @@ const PlayQuiz = () => {
       navigate("/login");
       return;
     }
-
+    console.log("Invite code from params:", inviteCode);
     const newSocket = io("http://localhost:5000", {
       auth: { token },
     });
 
     newSocket.on("connect", () => {
+      console.log("Socket connected successfully");
       setConnectionStatus("connected");
       if (inviteCode) {
+        console.log("Emitting join-lobby with code:", inviteCode);
         newSocket.emit("join-lobby", { inviteCode });
-      }
-    });
-
-    newSocket.on("connect_error", (error) => {
-      console.error("Connection error:", error);
-      setConnectionStatus("error");
-      if (error.message.includes("Authentication")) {
-        localStorage.removeItem("token");
-        navigate("/login");
+      } else {
+        console.error("No invite code available");
       }
     });
 
     newSocket.on("lobby-update", ({ players, message }) => {
-      setQuizState((prev) => ({ ...prev, players }));
-      setMessage(message);
-      setTimeout(() => setMessage(""), 3000);
+      console.log("Received lobby-update:", { players, message });
+      setQuizState((prev) => ({
+        ...prev,
+        players: players || [],
+      }));
+      if (message) {
+        setMessage(message);
+        setTimeout(() => setMessage(""), 3000);
+      }
     });
 
     newSocket.on("quiz-started", ({ totalQuestions }) => {
@@ -120,7 +123,7 @@ const PlayQuiz = () => {
       }));
     });
 
-    newSocket.on("quiz-ended", ({ finalScores, winner }) => {
+    newSocket.on("quiz-ended", ({ finalScores }) => {
       setQuizState((prev) => ({
         ...prev,
         isQuizEnded: true,
@@ -229,10 +232,12 @@ const PlayQuiz = () => {
                   key={index}
                   className="flex justify-between items-center p-3 bg-gray-50 rounded"
                 >
-                  <span className="font-medium">{player}</span>
+                  <span className="font-medium">
+                    {player.name} ({player.role})
+                  </span>
                   {quizState.isQuizStarted && (
                     <span className="text-sm text-gray-600">
-                      Score: {quizState.scores[player] || 0}
+                      Score: {quizState.scores[player.name] || 0}
                     </span>
                   )}
                 </div>
@@ -272,22 +277,27 @@ const PlayQuiz = () => {
                   </h3>
                   {Object.entries(quizState.scores)
                     .sort(([, a], [, b]) => (b as number) - (a as number))
-                    .map(([player, score], index) => (
-                      <div
-                        key={player}
-                        className={`flex justify-between items-center p-4 rounded ${
-                          index === 0
-                            ? "bg-yellow-100 border-2 border-yellow-300"
-                            : "bg-gray-50"
-                        }`}
-                      >
-                        <span className="font-medium">
-                          {index === 0 && "👑 "}
-                          {player}
-                        </span>
-                        <span className="text-lg font-bold">{score}</span>
-                      </div>
-                    ))}
+                    .map(([playerName, score], index) => {
+                      const player = quizState.players.find(
+                        (p) => p.name === playerName
+                      );
+                      return (
+                        <div
+                          key={playerName}
+                          className={`flex justify-between items-center p-4 rounded ${
+                            index === 0
+                              ? "bg-yellow-100 border-2 border-yellow-300"
+                              : "bg-gray-50"
+                          }`}
+                        >
+                          <span className="font-medium">
+                            {index === 0 && "👑 "}
+                            {playerName} ({player?.role || "Unknown"})
+                          </span>
+                          <span className="text-lg font-bold">{score}</span>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             ) : (
