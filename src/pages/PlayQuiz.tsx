@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
@@ -30,14 +30,17 @@ interface QuizState {
   selectedAnswer?: number;
   hasAnswered: boolean;
   userRole?: string;
+  backgroundMusic?: string;
 }
 
 const PlayQuiz = () => {
   const { inviteCode } = useParams<{ inviteCode: string }>();
   const navigate = useNavigate();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [userRole, setUserRole] = useState<string>("");
+  const [isMusicPlaying, setIsMusicPlaying] = useState<boolean>(false);
   const [quizState, setQuizState] = useState<QuizState>({
     players: [],
     questionIndex: 0,
@@ -52,6 +55,36 @@ const PlayQuiz = () => {
     "connecting" | "connected" | "error"
   >("connecting");
   const [message, setMessage] = useState("");
+
+  const playBackgroundMusic = (musicPath: string) => {
+    if (audioRef.current) {
+      audioRef.current.src = `${musicPath}`;
+      audioRef.current.loop = true;
+      audioRef.current.volume = 0.3; // Set volume to 30%
+      audioRef.current.play().catch(console.error);
+      setIsMusicPlaying(true);
+    }
+  };
+
+  const stopBackgroundMusic = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsMusicPlaying(false);
+    }
+  };
+
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isMusicPlaying) {
+        audioRef.current.pause();
+        setIsMusicPlaying(false);
+      } else {
+        audioRef.current.play().catch(console.error);
+        setIsMusicPlaying(true);
+      }
+    }
+  };
 
   useEffect(() => {
     const cookie = document.cookie;
@@ -92,13 +125,18 @@ const PlayQuiz = () => {
       }
     });
 
-    newSocket.on("quiz-started", ({ totalQuestions }) => {
+    newSocket.on("quiz-started", ({ totalQuestions, backgroundMusic }) => {
       setQuizState((prev) => ({
         ...prev,
         isQuizStarted: true,
         totalQuestions,
         questionIndex: 0,
+        backgroundMusic,
       }));
+
+      if (backgroundMusic) {
+        playBackgroundMusic(backgroundMusic);
+      }
     });
 
     newSocket.on("new-question", ({ question, questionIndex, timeLimit }) => {
@@ -135,11 +173,13 @@ const PlayQuiz = () => {
         isQuizEnded: true,
         scores: finalScores,
       }));
+      stopBackgroundMusic();
     });
 
     setSocket(newSocket);
 
     return () => {
+      stopBackgroundMusic();
       newSocket.close();
     };
   }, [inviteCode, navigate]);
@@ -167,6 +207,7 @@ const PlayQuiz = () => {
   };
 
   const leaveQuiz = () => {
+    stopBackgroundMusic();
     if (socket) {
       socket.close();
     }
@@ -209,6 +250,7 @@ const PlayQuiz = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <audio ref={audioRef} preload="auto" />
       <div className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex justify-between items-center">
@@ -216,12 +258,28 @@ const PlayQuiz = () => {
               <h1 className="text-2xl font-bold text-gray-800">Quiz Room</h1>
               <p className="text-gray-600">Invite Code: {inviteCode}</p>
             </div>
-            <button
-              onClick={leaveQuiz}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-            >
-              Leave Quiz
-            </button>
+            <div className="flex gap-2">
+              {/* Music control button */}
+              {quizState.isQuizStarted && quizState.backgroundMusic && (
+                <button
+                  onClick={toggleMusic}
+                  className={`px-4 py-2 rounded transition-colors ${
+                    isMusicPlaying
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : "bg-gray-600 hover:bg-gray-700 text-white"
+                  }`}
+                  title={isMusicPlaying ? "Pause Music" : "Play Music"}
+                >
+                  {isMusicPlaying ? "🔊" : "🔇"}
+                </button>
+              )}
+              <button
+                onClick={leaveQuiz}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              >
+                Leave Quiz
+              </button>
+            </div>
           </div>
           {message && (
             <div className="mt-4 p-3 bg-blue-100 border border-blue-300 rounded text-blue-800">
@@ -356,7 +414,7 @@ const PlayQuiz = () => {
                       <div className="mb-6 flex justify-center">
                         <div className="max-w-md w-full">
                           <img
-                            src={`http://localhost:5000${quizState.currentQuestion.image}`}
+                            src={`${quizState.currentQuestion.image}`}
                             alt="Question"
                             className="w-full h-auto max-h-64 object-contain rounded-lg shadow-md border border-gray-200"
                             onError={(e) => {
@@ -415,6 +473,31 @@ const PlayQuiz = () => {
           </div>
         </div>
       </div>
+      {/* Music Attribution Footer */}
+      <footer className="bg-gray-100 border-t border-gray-200 py-4">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-sm text-gray-600">
+            Music by{" "}
+            <a
+              href="https://pixabay.com/users/lnplusmusic-47631836/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=314199"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Andrii Poradovskyi
+            </a>{" "}
+            from{" "}
+            <a
+              href="https://pixabay.com//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=314199"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Pixabay
+            </a>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };
