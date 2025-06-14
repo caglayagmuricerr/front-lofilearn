@@ -15,6 +15,7 @@ interface Question {
   options: string[];
   correctAnswer: number;
   timeLimit: number;
+  image?: string;
 }
 
 interface QuizState {
@@ -169,7 +170,11 @@ const PlayQuiz = () => {
     if (socket) {
       socket.close();
     }
-    navigate("/student-dashboard");
+    if (userRole === "teacher") {
+      navigate("/teacher-dashboard");
+    } else {
+      navigate("/student-dashboard");
+    }
   };
 
   if (connectionStatus === "connecting") {
@@ -346,6 +351,26 @@ const PlayQuiz = () => {
                       {quizState.currentQuestion.question}
                     </h2>
 
+                    {/* Question Image */}
+                    {quizState.currentQuestion?.image && (
+                      <div className="mb-6 flex justify-center">
+                        <div className="max-w-md w-full">
+                          <img
+                            src={`http://localhost:5000${quizState.currentQuestion.image}`}
+                            alt="Question"
+                            className="w-full h-auto max-h-64 object-contain rounded-lg shadow-md border border-gray-200"
+                            onError={(e) => {
+                              console.error(
+                                "Error loading image:",
+                                quizState.currentQuestion?.image
+                              );
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {userRole === "teacher" ? (
                       <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg text-center">
                         <p className="text-blue-800 font-medium">
@@ -379,7 +404,7 @@ const PlayQuiz = () => {
                     )}
 
                     {quizState.hasAnswered && userRole === "student" && (
-                      <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded text-green-800">
+                      <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded text-white">
                         Answer submitted! Waiting for other players...
                       </div>
                     )}

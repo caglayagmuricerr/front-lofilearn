@@ -64,12 +64,14 @@ function CreateQuiz() {
         },
         body: formData,
       });
-      console.log("Token:", token);
+
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to upload image");
       }
+
+      //console.log("Received image URL:", data.imageUrl);
 
       setCurrentQuestion({
         ...currentQuestion,
@@ -80,6 +82,12 @@ function CreateQuiz() {
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.error("Failed to load image:", e.currentTarget.src);
+    console.error("Image error event:", e);
+    setError(`Failed to load image: ${e.currentTarget.src}`);
   };
 
   const removeImage = () => {
@@ -230,12 +238,6 @@ function CreateQuiz() {
         Create a New Quiz
       </h1>
 
-      {error && (
-        <div className="bg-chestnut-300 border border-chestnut-400 text-chestnut-500 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
       {success && (
         <div className="bg-green-100 border border-green-400 px-4 py-3 rounded mb-4">
           {success}
@@ -287,7 +289,10 @@ function CreateQuiz() {
         <div className="flex justify-center">
           <button
             type="button"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setIsModalOpen(true);
+              setError("");
+            }}
             className="bg-white border-2 border-chestnut-400 rounded-xl p-8 hover:bg-chestnut-300 transition-colors duration-200 shadow-lg"
           >
             <Plus className="h-16 w-16 text-chestnut-400 mx-auto" />
@@ -316,6 +321,13 @@ function CreateQuiz() {
                           src={question.image}
                           alt="Question"
                           className="w-16 h-16 object-cover rounded"
+                          onError={handleImageError}
+                          onLoad={() =>
+                            console.log(
+                              "Question list image loaded:",
+                              question.image
+                            )
+                          }
                         />
                       )}
                       <div>
@@ -375,6 +387,12 @@ function CreateQuiz() {
                 </button>
               </div>
 
+              {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                  {error}
+                </div>
+              )}
+
               <div>
                 <label
                   htmlFor="questionText"
@@ -408,6 +426,13 @@ function CreateQuiz() {
                       src={currentQuestion.image}
                       alt="Question"
                       className="max-w-xs max-h-48 object-contain rounded-lg border"
+                      onError={handleImageError}
+                      onLoad={() =>
+                        console.log(
+                          "Image loaded successfully:",
+                          currentQuestion.image
+                        )
+                      }
                     />
                     <button
                       type="button"
